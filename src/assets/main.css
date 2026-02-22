@@ -1,0 +1,33 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/forms";
+@plugin "@tailwindcss/container-queries";
+
+@theme {
+  --color-primary: #064E3B;
+  --color-gold: #D97706;
+  --color-background-light: #f6f8f7;
+  --color-background-dark: #0a120d;
+  --color-surface-dark: #121d16;
+  --color-accent-emerald: #0d3d25;
+  --font-display: "Manrope", sans-serif;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+}
+
+@layer utilities {
+  .islamic-pattern {
+    background-color: #0a120d;
+    /* background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDH6JlUvstjm9JrhSfDhgb8iWYpIyMyZyZHCIqAKQUCiyyZv1Pw8lAyXeqgHvmqPMHK6MKOc_Ivs6KpijVpTxIzZlqLKkN3pFRWioPRqAQHSy0ad22V8EPkFm2zMjLmu1KLG90STuHBoK2kmlYE32JrUWFwqPwM0tvRZZTGNmlmNnD129lMimXHujeqzUv3S5x6MNvYomMWuadTQKMcMI3F7OZWqp5HIzNfBwvz4guxFCr64nsTKdnvn-5TrNPHaCEcYH3wLHE2nmv_"); */
+    background-size: 60px 60px;
+  }
+  .gold-border-gradient {
+    border: 1px solid transparent;
+    background: linear-gradient(#121d16, #121d16) padding-box, linear-gradient(to right, #d4af37, #f1d592, #d4af37) border-box;
+  }
+  .glass-card {
+    background: rgba(16, 34, 24, 0.8);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(212, 175, 55, 0.2);
+  }
+}
