@@ -1,0 +1,62 @@
+# Multi-stage Dockerfile for production deployment
+# Stage 1: Build frontend
+FROM node:20-alpine AS frontend-builder
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+COPY tsconfig*.json ./
+COPY vite.config.ts ./
+COPY vitest.config.ts ./
+COPY postcss.config.js ./
+
+# Install all dependencies (including dev dependencies for build)
+RUN npm ci --ignore-scripts
+
+# Copy source code
+COPY src/ ./src/
+COPY public/ ./public/
+COPY index.html ./
+COPY env.d.ts ./
+
+# Build frontend
+RUN npm run build
+
+# Stage 2: Production runtime
+FROM nginx:stable-alpine AS production
+
+# Install system dependencies
+RUN apk add --no-cache curl
+
+WORKDIR /usr/share/nginx/html
+
+# Copy built frontend from frontend-builder
+COPY --from=frontend-builder /app/dist ./
+
+# Copy Nginx SPA configuration
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Set permissions for Nginx to run as non-root user
+RUN chown -R nginx:nginx /usr/share/nginx/html && \
+    chown -R nginx:nginx /var/cache/nginx && \
+    chown -R nginx:nginx /var/log/nginx && \
+    chown -R nginx:nginx /etc/nginx/conf.d && \
+    touch /var/run/nginx.pid && \
+    chown -R nginx:nginx /var/run/nginx.pid
+
+# Change to non-root user (nginx user already exists in nginx:stable-alpine)
+USER nginx
+
+# Set production environment
+ENV NODE_ENV=production
+
+# Expose port (non-root users can only expose ports > 1024)
+EXPOSE 8080
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8080/ || exit 1
+
+# Start Nginx
+CMD ["nginx", "-g", "daemon off;"]
