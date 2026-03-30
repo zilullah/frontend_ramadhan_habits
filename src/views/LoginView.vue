@@ -5,15 +5,30 @@ import AuthHeader from '@/components/AuthHeader.vue'
 import SocialAuthButtons from '@/components/SocialAuthButtons.vue'
 import AuthInput from '@/components/AuthInput.vue'
 import AuthFooter from '@/components/AuthFooter.vue'
+import { authService } from '@/services/auth.service'
 
 const router = useRouter()
 const email = ref('')
 const password = ref('')
 const rememberMe = ref(false)
+const isLoading = ref(false)
 
-const handleLogin = () => {
-  // Mock login success and redirect to dashboard
-  router.push('/dashboard')
+const handleLogin = async () => {
+  if (!email.value || !password.value) return
+  
+  isLoading.value = true
+  try {
+    await authService.login({
+      email: email.value,
+      password: password.value
+    })
+    router.push('/dashboard')
+  } catch (error) {
+    console.error('Login failed:', error)
+    alert('Login failed. Please check your credentials.')
+  } finally {
+    isLoading.value = false
+  }
 }
 
 const goToRegister = () => {
@@ -91,8 +106,11 @@ const goToRegister = () => {
             />
             <label class="text-sm font-medium text-slate-500 cursor-pointer" for="remember">Keep me focused</label>
           </div>
-          <button class="w-full bg-gold hover:bg-gold/90 text-background-dark font-black py-5 rounded-xl tracking-[0.2em] uppercase text-sm shadow-xl shadow-gold/10 transform active:scale-[0.98] transition-all">
-            Bismillah & Sign In
+          <button 
+            :disabled="isLoading"
+            class="w-full bg-gold hover:bg-gold/90 text-background-dark font-black py-5 rounded-xl tracking-[0.2em] uppercase text-sm shadow-xl shadow-gold/10 transform active:scale-[0.98] transition-all disabled:opacity-50"
+          >
+            {{ isLoading ? 'Entering...' : 'Bismillah & Sign In' }}
           </button>
         </form>
       </div>

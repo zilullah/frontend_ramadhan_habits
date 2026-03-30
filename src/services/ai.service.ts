@@ -1,34 +1,23 @@
+import api from './api.service'
+
 export const aiService = {
   streamMotivation(callback: (text: string) => void) {
-    // In a real implementation, this would use EventSource
-    // const eventSource = new EventSource(`${import.meta.env.VITE_API_URL}/ai/motivation/stream`)
-    // eventSource.onmessage = (event) => callback(event.data)
-    // return () => eventSource.close()
-
-    // Mock implementation for the typewriter/stream feel
-    const fullText = "Verily, with hardship comes ease. Let your heart find tranquility in the remembrance of your Creator as you build your character today. Discipline is the bridge between goals and accomplishment."
-    let currentText = ""
-    let index = 0
+    const eventSource = new EventSource(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/ai/motivation/stream`)
     
-    const interval = setInterval(() => {
-      if (index < fullText.length) {
-        currentText += fullText[index]
-        callback(currentText)
-        index++
-      } else {
-        clearInterval(interval)
-      }
-    }, 30)
+    eventSource.onmessage = (event) => {
+      callback(event.data)
+    }
 
-    return () => clearInterval(interval)
+    eventSource.onerror = (error) => {
+      console.error('SSE Error:', error)
+      eventSource.close()
+    }
+
+    return () => eventSource.close()
   },
 
-  async getMotivation() {
-    // const { data } = await api.get('/ai/motivation')
-    // return data
-    return {
-      text: "Every struggle is a form of worship if done with the right intention.",
-      reference: "Hadith Reflection"
-    }
+  async getMotivation(): Promise<string> {
+    const { data } = await api.get('/ai/motivation')
+    return data
   }
 }

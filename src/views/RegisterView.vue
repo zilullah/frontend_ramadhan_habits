@@ -5,14 +5,31 @@ import AuthHeader from '@/components/AuthHeader.vue'
 import SocialAuthButtons from '@/components/SocialAuthButtons.vue'
 import AuthInput from '@/components/AuthInput.vue'
 import AuthFooter from '@/components/AuthFooter.vue'
+import { authService } from '@/services/auth.service'
 
 const router = useRouter()
+const name = ref('')
 const email = ref('')
 const password = ref('')
+const isLoading = ref(false)
 
-const handleRegister = () => {
-  // Mock registration success and redirect to dashboard
-  router.push('/dashboard')
+const handleRegister = async () => {
+  if (!email.value || !password.value || !name.value) return
+  
+  isLoading.value = true
+  try {
+    await authService.register({
+      email: email.value,
+      password: password.value,
+      name: name.value
+    })
+    router.push('/login')
+  } catch (error) {
+    console.error('Registration failed:', error)
+    alert('Registration failed. Please try again.')
+  } finally {
+    isLoading.value = false
+  }
 }
 
 const goToLogin = () => {
@@ -65,6 +82,14 @@ const goToLogin = () => {
         <!-- Input Group -->
         <form class="space-y-6" @submit.prevent="handleRegister">
           <AuthInput 
+            label="Full Name"
+            v-model="name"
+            type="text"
+            placeholder="Muhammad Ali"
+            icon="person"
+          />
+
+          <AuthInput 
             label="Email Address"
             v-model="email"
             type="email"
@@ -80,8 +105,11 @@ const goToLogin = () => {
             icon="lock"
           />
           
-          <button class="w-full bg-gold hover:bg-gold/90 text-background-dark font-black py-5 rounded-xl tracking-[0.2em] uppercase text-sm shadow-xl shadow-gold/10 transform active:scale-[0.98] transition-all">
-            Bismillah & Create Account
+          <button 
+            :disabled="isLoading"
+            class="w-full bg-gold hover:bg-gold/90 text-background-dark font-black py-5 rounded-xl tracking-[0.2em] uppercase text-sm shadow-xl shadow-gold/10 transform active:scale-[0.98] transition-all disabled:opacity-50"
+          >
+            {{ isLoading ? 'Processing...' : 'Bismillah & Create Account' }}
           </button>
         </form>
       </div>

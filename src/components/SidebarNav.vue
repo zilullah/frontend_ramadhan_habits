@@ -1,9 +1,10 @@
 <script setup lang="ts">
 defineProps<{
   isOpen: boolean
+  username?: string
 }>()
 
-const emit = defineEmits(['new-habit', 'close'])
+const emit = defineEmits(['new-habit', 'close', 'logout'])
 </script>
 
 <template>
@@ -42,8 +43,8 @@ const emit = defineEmits(['new-habit', 'close'])
               </div>
             </div>
             <div class="flex flex-col">
-              <h2 class="text-sm font-bold tracking-wide text-white">Omar Al-Sayed</h2>
-              <p class="text-xs text-primary font-medium">15 Day Streak</p>
+              <h2 class="text-sm font-bold tracking-wide text-white">{{ username || 'Ibadurrahman' }}</h2>
+              <p class="text-xs text-primary font-medium italic">Active Journey</p>
             </div>
           </div>
           <button 
@@ -63,22 +64,20 @@ const emit = defineEmits(['new-habit', 'close'])
       </div>
       <!-- Bottom Actions -->
       <div class="space-y-4">
-        <div class="p-4 rounded-2xl bg-accent-emerald/40 border border-emerald-800/50">
-          <p class="text-[10px] uppercase tracking-widest text-emerald-400 font-bold mb-2">Monthly Progress</p>
-          <div class="flex justify-between items-end mb-1">
-            <span class="text-2xl font-bold text-slate-100">84%</span>
-            <span class="text-[10px] text-emerald-400">+12% from last week</span>
-          </div>
-          <div class="h-1.5 w-full bg-emerald-900 rounded-full overflow-hidden">
-            <div class="h-full bg-primary" style="width: 84%;"></div>
-          </div>
-        </div>
         <button 
           @click="emit('new-habit')"
-          class="w-full flex items-center justify-center gap-2 py-3 bg-primary text-background-dark font-bold rounded-xl hover:opacity-90 transition-all"
+          class="w-full flex items-center justify-center gap-2 py-3 bg-primary text-background-dark font-bold rounded-xl hover:opacity-90 transition-all mb-2"
         >
           <span class="material-symbols-outlined">add</span>
           <span class="text-sm">New Habit</span>
+        </button>
+
+        <button 
+          @click="emit('logout')"
+          class="w-full flex items-center justify-center gap-2 py-3 bg-white/5 text-slate-400 hover:text-white hover:bg-red-500/10 hover:text-red-400 border border-white/5 transition-all text-sm font-bold rounded-xl"
+        >
+          <span class="material-symbols-outlined text-sm">logout</span>
+          <span>Logout</span>
         </button>
       </div>
     </div>

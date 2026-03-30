@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import SidebarNav from '@/components/SidebarNav.vue'
 import HabitCard from '@/components/HabitCard.vue'
 import AddHabitModal from '@/components/AddHabitModal.vue'
@@ -7,19 +8,14 @@ import ProgressUpdateModal from '@/components/ProgressUpdateModal.vue'
 import TypewriterText from '@/components/TypewriterText.vue'
 import { getIslamicDate, getGregorianDate } from '@/utils/date'
 import { aiService } from '@/services/ai.service'
-
+import { authService } from '@/services/auth.service'
 import { habitService } from '@/services/habit.service'
 
-const habits = ref([
-  { id: '1', habit: 'Fajr Prayer', category: 'Morning Devotion', time: '05:15 AM', target: '1', actual: '1', progress: 100, icon: 'wb_sunny', completed: true, unit: 'Kali' },
-  { id: '2', habit: 'Read Quran', category: 'Spiritual Knowledge', time: '10 Pages', target: '10', actual: '4', progress: 40, icon: 'auto_stories', unit: 'Halaman' },
-  { id: '3', habit: 'Morning Dhikr', category: 'Mindfulness', time: '15 Mins', target: '15', actual: '15', progress: 100, icon: 'self_improvement', completed: true, unit: 'Menit' },
-  { id: '4', habit: 'Physical Well-being', category: 'Body Stewardship', time: '45 Mins Gym', target: '45', actual: '0', progress: 0, icon: 'fitness_center', unit: 'Menit' }
-])
+const habits = ref<any[]>([])
 
 const gregorianDate = ref(getGregorianDate())
 const islamicDate = ref(getIslamicDate())
-const username = ref('Omar Al-Sayed')
+const username = ref('')
 
 const isAddHabitModalOpen = ref(false)
 const isProgressModalOpen = ref(false)
@@ -29,7 +25,45 @@ const selectedHabit = ref<any>(null)
 const motivationQuote = ref("")
 const isRefiningQuote = ref(false)
 
-onMounted(() => {
+const router = useRouter()
+
+const fetchHabits = async () => {
+  try {
+    const data = await habitService.getTodayHabits()
+    habits.value = data.map(h => {
+      const todayPlan = h.plans[0]
+      if (!todayPlan) return null
+      
+      const target = todayPlan.targetValue
+      const actual = todayPlan.actualValue
+      
+      return {
+        id: h.id,
+        planId: todayPlan.id,
+        habit: h.name,
+        category: 'Spiritual Discipline',
+        time: `${target} Unit`, // Target unit usually static or from habit def
+        target: target.toString(),
+        actual: actual.toString(),
+        progress: Math.min(100, Math.round((actual / target) * 100)),
+        icon: 'auto_awesome',
+        completed: todayPlan.isCompleted,
+        unit: 'Unit'
+      }
+    }).filter(Boolean)
+  } catch (error) {
+    console.error('Failed to fetch habits:', error)
+  }
+}
+
+onMounted(async () => {
+  const user = authService.getUser()
+  if (user) {
+    username.value = user.name
+  }
+  
+  await fetchHabits()
+  
   aiService.streamMotivation((text) => {
     motivationQuote.value = text
   })
@@ -44,37 +78,36 @@ const openProgressUpdate = (habit: any) => {
   isProgressModalOpen.value = true
 }
 
-const handleSaveHabit = (newHabit: any) => {
-  habits.value.push({
-    id: Date.now().toString(),
-    habit: newHabit.name,
-    category: 'Custom Habit',
-    time: `${newHabit.totalTarget} ${newHabit.targetUnit}`,
-    target: newHabit.totalTarget.toString(),
-    actual: '0',
-    progress: 0,
-    icon: 'star',
-    completed: false,
-    unit: newHabit.targetUnit
-  })
+const handleLogout = () => {
+  authService.logout()
+  router.push('/login')
+}
+
+const handleSaveHabit = async (newHabit: any) => {
+  try {
+    await habitService.createHabit(newHabit)
+    await fetchHabits()
+  } catch (error) {
+    console.error('Failed to create habit:', error)
+  }
 }
 
 const handleUpdateProgress = async (val: number) => {
   if (!selectedHabit.value) return
   
   try {
-    const response = await habitService.updateProgress(selectedHabit.value.id, val)
+    const response = await habitService.updateProgress(selectedHabit.value.planId, val)
     
     // Update local state from response
-    const h = habits.value.find(h => h.id === selectedHabit.value.id)
+    const h = habits.value.find(h => h.planId === selectedHabit.value.planId)
     if (h) {
       h.actual = response.plan.actualValue.toString()
-      const target = parseFloat(h.target)
+      const target = response.plan.targetValue
       h.progress = Math.min(100, Math.round((response.plan.actualValue / target) * 100))
       h.completed = response.plan.isCompleted
     }
 
-    // Update motivation from AI feedback
+    // Update motivation from AI feedback if provided
     if (response.motivation) {
       motivationQuote.value = response.motivation
     }
@@ -98,8 +131,10 @@ const handleReflect = () => {
     <!-- Sidebar -->
     <SidebarNav 
       :is-open="isSidebarOpen" 
+      :username="username"
       @close="isSidebarOpen = false"
       @new-habit="openAddHabit" 
+      @logout="handleLogout"
     />
 
     <!-- Main Content -->
@@ -155,7 +190,7 @@ const handleReflect = () => {
                   <TypewriterText v-if="!isRefiningQuote" :text="motivationQuote" />
                   <span v-else class="animate-pulse">Refining divine reflections...</span>
                 </h1>
-                <p class="mt-4 text-slate-400 text-xs lg:text-sm">— Surah Ash-Sharh [94:6] • Reflections for Omar</p>
+                <!-- <p class="mt-4 text-slate-400 text-xs lg:text-sm">— Surah Ash-Sharh [94:6] • Reflections for Omar</p> -->
               </div>
               <div class="pt-2 lg:pt-4 flex flex-wrap gap-3 lg:gap-4">
                 <button 
